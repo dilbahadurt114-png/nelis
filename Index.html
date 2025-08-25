@@ -1,124 +1,75 @@
 <!DOCTYPE html>
-<html lang="ne">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>नेपाली मिति, समय, पञ्चाङ्ग र मौसम</title>
+<title>Dynamic Breaking News Ticker</title>
 <style>
-  html, body {
+  body {
     margin: 0;
-    padding: 0;
-    height: 100%;
-    width: 100%;
-    background: linear-gradient(135deg, #1e3c72, #2a5298, #6a11cb);
-    font-family: 'Courier New', monospace;
-    color: white;
+    overflow: hidden;
+    background-color: #cc0000;
+    font-family: Arial, sans-serif;
+  }
+  .ticker-container {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
     align-items: center;
-    text-align: center;
+    height: 80px;
+    overflow: hidden;
   }
-  .date {
-    font-size: clamp(2rem, 3vw, 3rem);
-    margin: 5px 0;
-    word-wrap: break-word;
+  .breaking-label {
+    background-color: #ffffff;
+    color: #cc0000;
+    font-weight: bold;
+    padding: 10px 20px;
+    margin-right: 10px;
+    animation: flash 1s infinite;
   }
-  .time {
-    font-size: clamp(3rem, 6vw, 5rem);
-    font-weight: 800;
-    color: #0f0;
-    text-shadow: 0 0 6px #0f0, 0 0 14px #0f0, 0 0 28px #0f0;
-    letter-spacing: 2px;
-    margin: 10px 0;
+  @keyframes flash {
+    0%, 50%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.3; }
   }
-  .panchang, .weather {
-    font-size: clamp(1.2rem, 2.5vw, 2rem);
-    margin: 5px 0;
-    word-wrap: break-word;
+  .ticker-text {
+    white-space: nowrap;
+    display: inline-block;
+    color: #ffffff;
+    font-size: 2em;
+    font-weight: bold;
+    animation: scroll 25s linear infinite;
+  }
+  .ticker-text span {
+    margin-right: 100px;
+  }
+  @keyframes scroll {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
   }
 </style>
 </head>
 <body>
-
-<div class="date" id="ad-date"></div>
-<div class="date" id="bs-date"></div>
-<div class="time" id="clock"></div>
-<div class="panchang" id="panchang">पञ्चाङ्ग लोड हुँदै...</div>
-<div class="weather" id="weather">मौसम लोड हुँदै...</div>
+<div class="ticker-container">
+  <div class="breaking-label">सुचना</div>
+  <div class="ticker-text" id="ticker">
+    <!-- Messages will appear here -->
+  </div>
+</div>
 
 <script>
-const bsMonths = ["बैशाख","जेठ","असार","साउन","भाद्र","असोज","कार्तिक","मंसिर","पुष","माघ","फाल्गुन","चैत्र"];
-const weekDays = ["आइतबार","सोमबार","मंगलबार","बुधबार","बिहीबार","शुक्रबार","शनिबार"];
-const bsData = {
-  2082:[31,31,32,31,31,31,30,29,30,29,30,30],2083:[31,31,32,31,31,30,30,30,29,30,29,31],
-  2084:[31,31,32,31,32,29,30,30,29,30,29,30],2085:[31,32,31,32,31,29,30,30,29,30,29,30],
-  2086:[31,32,31,32,31,30,29,30,29,30,29,30],2087:[31,32,31,32,31,30,30,29,30,29,30,30],
-  2088:[31,31,32,31,31,30,30,30,29,30,29,31],2089:[31,31,32,31,32,29,30,30,29,30,29,30],
-  2090:[31,32,31,32,31,29,30,30,29,30,29,30]
-};
-const refAD = new Date(2025,7,22), refBS={y:2082,m:5,d:6};
+  // List of messages (replace this with dynamic fetch if hosting online)
+  const messages = [
+    "🚨 नमस्कार हजुरहरुलाई,  नापी कार्यालय गोटिखेलमा स्वागत गर्दछौ । 🚨",
+    "🚨 यहाँ सुर्ती,धुम्रपान, मद्यपान गर्न मनाही छ ! 🚨",
+    "🚨 तपाई सि सि टिभिको निगरानीमा हुनुहुन्छ । 🚨",
+    "🚨 Headline: Message 4 goes here! 🚨"
+  ];
 
-function toNepaliDigits(str){
-  return String(str).replace(/\d/g,d=>["०","१","२","३","४","५","६","७","८","९"][+d]);
-}
-function pad2(n){ return n.toString().padStart(2,"0"); }
-function adToBs(ad){
-  let diff=Math.floor((ad-refAD)/(1000*60*60*24)), y=refBS.y, m=refBS.m, d=refBS.d;
-  while(diff>0 && bsData[y]){
-    d++; if(d>bsData[y][m-1]){ d=1; m++; if(m>12){y++;m=1;} } diff--;
-  }
-  while(diff<0 && bsData[y]){
-    d--; if(d<1){ m--; if(m<1){ y--; m=12;} d=bsData[y][m-1]; } diff++;
-  }
-  return {y,m,d};
-}
+  const ticker = document.getElementById('ticker');
 
-function updateAll(){
-  const now=new Date();
-
-  // AD
-  document.getElementById("ad-date").textContent = 
-    `ई.सं.: ${toNepaliDigits(now.getFullYear())}-${toNepaliDigits(pad2(now.getMonth()+1))}-${toNepaliDigits(pad2(now.getDate()))} (${weekDays[now.getDay()]})`;
-
-  // BS
-  const bs=adToBs(now);
-  document.getElementById("bs-date").textContent = 
-    `वि.सं.: ${toNepaliDigits(bs.y)} ${bsMonths[bs.m-1]} ${toNepaliDigits(bs.d)} गते (${weekDays[now.getDay()]})`;
-
-  // Time
-  let h=now.getHours(), period= h<12?"पूर्वान्ह":"अपरान्ह";
-  h=h%12||12;
-  document.getElementById("clock").textContent = 
-    `${toNepaliDigits(pad2(h))}:${toNepaliDigits(pad2(now.getMinutes()))}:${toNepaliDigits(pad2(now.getSeconds()))} ${period}`;
-
-  // Panchang (simplified)
-  const tithiNames=["प्रतिपदा","द्वितीया","तृतीया","चतुर्थी","पञ्चमी","षष्ठी","सप्तमी","अष्टमी","नवमी","दशमी","एकादशी","द्वादशी","त्रयोदशी","चतुर्दशी","पूर्णिमा"];
-  document.getElementById("panchang").textContent =
-    `आजको पाक्षिक: ${weekDays[now.getDay()]}, ${tithiNames[(bs.d-1)%15]}`;
-
-  // Weather
-  fetch("https://api.open-meteo.com/v1/forecast?latitude=27.494&longitude=85.388&current_weather=true")
-    .then(r=>r.json()).then(data=>{
-      const w=data.current_weather;
-      const codeMap={
-        0:"स्पष्ट आकाश",1:"मुख्यतः साफ",2:"आंशिक बादल",3:"बादल",45:"कुहिरो",48:"जाडो कुहिरो",
-        51:"हल्का drizzle",53:"मध्यम drizzle",55:"गहिरो drizzle",56:"हल्का फ्रिजिङ drizzle",57:"फ्रिजिङ drizzle",
-        61:"हल्का वर्षा",63:"साधारण वर्षा",65:"भारी वर्षा",66:"हल्का फ्रिजिङ वर्षा",67:"फ्रिजिङ वर्षा",
-        71:"हल्का हिउँ",73:"साधारण हिउँ",75:"भारी हिउँ",77:"हिउँका दाना",
-        80:"हल्का वर्षा झरी",81:"मध्यम वर्षा झरी",82:"भारी वर्षा झरी",
-        85:"हल्का हिउँ झरी",86:"भारी हिउँ झरी",
-        95:"वज्रपात",96:"ओलाचक्रित तूफान",99:"भारी ओलाचक्रित तूफान"
-      };
-      const desc=codeMap[w.weathercode]||"अज्ञात अवस्थ";
-      document.getElementById("weather").textContent=
-        `गोटिखेल मौसम: ${desc}, तापक्रम ${toNepaliDigits(w.temperature)}°C, हावा ${toNepaliDigits(w.windspeed)} km/h`;
-    })
-    .catch(_=> document.getElementById("weather").textContent="मौसम लोड भएन");
-}
-
-setInterval(updateAll,1000);
-updateAll();
+  // Add messages to ticker
+  messages.forEach(msg => {
+    const span = document.createElement('span');
+    span.textContent = msg;
+    ticker.appendChild(span);
+  });
 </script>
-
 </body>
 </html>
